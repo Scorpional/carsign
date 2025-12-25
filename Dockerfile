@@ -11,7 +11,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 RUN mkdir -p /app/uploads /app/data
 
+# Copy start script and make executable
+RUN chmod +x /app/start.sh
+
 EXPOSE 8000
 
-# Default start command baked in (Zeabur 可不用额外设置)
-CMD ["sh", "-c", "mkdir -p /app/data /app/uploads && python app/init_admin.py && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+# Default start command; can switch to static demo via DEMO_STATIC=1
+CMD ["sh", "/app/start.sh"]
