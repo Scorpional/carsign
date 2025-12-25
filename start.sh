@@ -1,6 +1,9 @@
 #!/bin/sh
 set -e
 
+# ensure working directory
+cd /app
+
 mkdir -p /app/data /app/uploads
 
 if [ "$DEMO_STATIC" = "1" ]; then
