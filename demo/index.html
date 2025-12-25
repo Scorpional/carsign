@@ -4,19 +4,89 @@
   <meta charset="utf-8">
   <title>彭浩翔通勤车服务有限公司调度系统</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; background: #f8f8fb; }
-    header { display:flex; justify-content: space-between; align-items:center; margin-bottom: 20px; }
-    h1 { margin: 0; }
-    .card { background: white; padding: 16px; margin-bottom: 12px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
-    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-    th, td { padding: 8px; border-bottom: 1px solid #eee; text-align: left; }
-    th { background: #f1f3f8; }
-    .warn { color: #c0392b; font-weight: bold; }
-    .tag { display:inline-block; padding:2px 6px; border-radius:4px; background:#e6f0ff; color:#2c3e50; font-size: 12px; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; }
-    input, select, button { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-    button { background: #2c7be5; color: white; border: none; cursor: pointer; }
-    button:hover { background: #1b6ed6; }
+    :root {
+      --bg: #0b1220;
+      --panel: #111b2e;
+      --card: #152540;
+      --accent: #3ba5ff;
+      --accent-2: #6dd3ff;
+      --text: #e8f0ff;
+      --muted: #a5b5d6;
+      --warn: #ff7b7b;
+      --success: #5de8b0;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      background: radial-gradient(circle at 20% 20%, rgba(59,165,255,0.15), transparent 30%),
+                  radial-gradient(circle at 80% 0%, rgba(109,211,255,0.15), transparent 25%),
+                  var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 20px 28px;
+      background: var(--panel);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      position: sticky; top: 0; z-index: 10;
+    }
+    h1 { margin: 0; font-size: 20px; letter-spacing: 0.5px; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 10px; border-radius: 999px;
+      background: rgba(59,165,255,0.12); color: var(--accent);
+      font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .container { padding: 24px; max-width: 1200px; margin: 0 auto; }
+    .hero {
+      background: linear-gradient(135deg, rgba(59,165,255,0.28), rgba(21,37,64,0.95));
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: 0 25px 60px rgba(0,0,0,0.35);
+      border-radius: 16px;
+      padding: 20px;
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+    .hero h2 { margin: 0 0 6px; }
+    .hero p { margin: 0; color: var(--muted); }
+    .stats { display: flex; gap: 12px; flex-wrap: wrap; }
+    .stat {
+      background: rgba(21,37,64,0.8);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px; padding: 10px 12px;
+      min-width: 140px;
+    }
+    .stat-label { color: var(--muted); font-size: 12px; }
+    .stat-value { font-size: 18px; font-weight: 700; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 14px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 14px;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.25);
+    }
+    .card h3 { margin: 0 0 10px; font-size: 16px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 8px 6px; border-bottom: 1px solid rgba(255,255,255,0.06); text-align: left; }
+    th { color: var(--muted); font-weight: 600; font-size: 12px; letter-spacing: 0.3px; }
+    td { font-size: 13px; color: #e9eeff; }
+    .warn { color: var(--warn); font-weight: 700; }
+    .ok { color: var(--success); font-weight: 700; }
+    .tag {
+      display: inline-block; padding: 3px 8px; border-radius: 999px;
+      background: rgba(59,165,255,0.14); color: var(--accent);
+      font-size: 12px;
+    }
   </style>
 </head>
 <body>
@@ -27,26 +97,37 @@
     </div>
   </header>
 
-  <div class="grid">
-    <div class="card">
-      <h3>车辆台账</h3>
-      <table id="vehicles"></table>
+  <div class="container">
+    <div class="hero">
+      <div>
+        <div class="badge">Demo Preview</div>
+        <h2>通勤/包车调度总览</h2>
+        <p>车辆、司机、订单、派车、行程一屏查看。静态演示版，无需登录。</p>
+      </div>
+      <div class="stats" id="stat-cards"></div>
     </div>
-    <div class="card">
-      <h3>人员台账</h3>
-      <table id="staff"></table>
-    </div>
-    <div class="card">
-      <h3>订单</h3>
-      <table id="orders"></table>
-    </div>
-    <div class="card">
-      <h3>派车单</h3>
-      <table id="dispatch"></table>
-    </div>
-    <div class="card">
-      <h3>行程状态</h3>
-      <table id="trips"></table>
+
+    <div class="grid">
+      <div class="card">
+        <h3>车辆台账</h3>
+        <table id="vehicles"></table>
+      </div>
+      <div class="card">
+        <h3>人员台账</h3>
+        <table id="staff"></table>
+      </div>
+      <div class="card">
+        <h3>订单</h3>
+        <table id="orders"></table>
+      </div>
+      <div class="card">
+        <h3>派车单</h3>
+        <table id="dispatch"></table>
+      </div>
+      <div class="card">
+        <h3>行程状态</h3>
+        <table id="trips"></table>
+      </div>
     </div>
   </div>
 
@@ -61,14 +142,28 @@
         </tbody>`;
     };
 
+    // summary stats
+    const stats = [
+      { label: "车辆数", value: demoData.vehicles.length },
+      { label: "司机数", value: demoData.staff.length },
+      { label: "订单数", value: demoData.orders.length },
+      { label: "派车单", value: demoData.dispatch.length },
+      { label: "行程", value: demoData.trips.length },
+    ];
+    document.getElementById("stat-cards").innerHTML = stats.map(s => `
+      <div class="stat">
+        <div class="stat-label">${s.label}</div>
+        <div class="stat-value">${s.value}</div>
+      </div>`).join("");
+
     renderTable("vehicles",
-      ["车牌", "座位", "车型", "状态", "到期提醒"],
-      demoData.vehicles.map(v => [v.plate, v.seats, v.model, v.status, v.warn ? '<span class="warn">到期</span>' : '正常'])
+      ["车牌", "座位", "车型", "司机", "状态", "到期提醒"],
+      demoData.vehicles.map(v => [v.plate, v.seats, v.model, v.driver || "-", v.status, v.warn ? '<span class="warn">到期</span>' : '<span class="ok">正常</span>'])
     );
 
     renderTable("staff",
       ["姓名", "角色", "电话", "状态", "到期提醒"],
-      demoData.staff.map(s => [s.name, s.role, s.phone, s.status, s.warn ? '<span class="warn">到期</span>' : '正常'])
+      demoData.staff.map(s => [s.name, s.role, s.phone, s.status, s.warn ? '<span class="warn">到期</span>' : '<span class="ok">正常</span>'])
     );
 
     renderTable("orders",
