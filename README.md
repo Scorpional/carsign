@@ -2,21 +2,20 @@
 
 FastAPI + PostgreSQL + Docker Compose，一键启动展示“订单→排班→派车→出车→回单→报表”闭环，含 JWT 鉴权与基础 RBAC。
 
-## 快速启动（本地/服务器）
+## 快速启动（本地/服务器，单容器 SQLite）
 ```bash
 cp .env.example .env
 docker compose up -d --build
 ```
-- Web: http://localhost:8080 （Nginx 反代到 API）
-- API: http://localhost:8000 （Swagger: http://localhost:8000/api/docs）
+- Web/API: http://localhost:8080 （同端口，Swagger: http://localhost:8080/api/docs）
 - 默认管理员：`admin@example.com` / `Admin123!`（可在 `.env` 修改）
 
 ## 目录说明
 - `app/` FastAPI 应用、路由、模板、静态资源
 - `app/migrations/` Alembic 迁移
 - `uploads/` 回单/照片（容器卷挂载）
-- `deploy/nginx.conf` 反向代理
 - `app/seed.py` 测试数据种子
+- `data/` SQLite 持久化（部署时挂载卷）
 
 ## 数据迁移
 容器启动自动执行 `alembic upgrade head`。手动：
@@ -36,9 +35,8 @@ docker compose run --rm api python app/seed.py
 ```
 
 ## 备份/恢复
-- 备份数据库: `docker compose exec db pg_dump -U $POSTGRES_USER $POSTGRES_DB > backup.sql`
-- 恢复: `cat backup.sql | docker compose exec -T db psql -U $POSTGRES_USER $POSTGRES_DB`
-- 备份文件: 打包 `uploads/`
+- SQLite 备份：打包/复制 `data/app.db`
+- 上传文件：打包 `uploads/`
 
 ## 健康检查
 - DB: Docker healthcheck
@@ -49,13 +47,13 @@ docker compose run --rm api python app/seed.py
 - JWT 过期时间：`.env` 中配置
 - 上传限制：类型 png/jpg/pdf，大小 10MB
 
-## 部署到 Zeabur（示例流程）
-1. 推送本仓库到 GitHub。
-2. 在 Zeabur 新建项目并连接该仓库，选择 docker-compose 部署。
-3. 配置环境变量：`POSTGRES_USER/POSTGRES_PASSWORD/POSTGRES_DB/DATABASE_URL/JWT_SECRET/ADMIN_EMAIL/ADMIN_PASSWORD`。
-4. 挂载持久化存储到 `/app/uploads`。
-5. 暴露端口：web 服务 8080（外部），api 服务 8000（内部即可）。
-6. 如需演示数据：执行 `docker compose run --rm api python app/seed.py`。
+## 部署到 Zeabur（单容器，无外部 DB）
+1. 连接 GitHub 仓库，直接用 Dockerfile 构建。
+2. 环境变量：`DATABASE_URL=sqlite:///./data/app.db`，`JWT_SECRET`，`ADMIN_EMAIL`，`ADMIN_PASSWORD`（其余 Postgres 变量可忽略）。
+3. 持久化存储：挂载卷到 `/app/data`（SQLite）与 `/app/uploads`（回单）。
+4. 启动命令保持默认：`sh -c "alembic upgrade head && python app/init_admin.py && uvicorn app.main:app --host 0.0.0.0 --port 8000"`。
+5. 暴露端口：8000 -> 对外 8080。
+6. 需要演示数据：`docker compose run --rm app python app/seed.py`（Zeabur 可开一次性任务执行）。
 
 ## 演示流程
 1. 管理员登录，创建车辆/司机/订单（`/api/docs`）。

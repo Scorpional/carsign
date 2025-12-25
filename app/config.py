@@ -2,7 +2,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    database_url: str = "postgresql+psycopg2://caruser:carpass@db:5432/cardb"
+    # 默认为 SQLite 路径，便于在单容器环境直接运行
+    database_url: str = "sqlite:///./data/app.db"
     jwt_secret: str = "change_me"
     jwt_expire_minutes: int = 60
     admin_email: str = "admin@example.com"
