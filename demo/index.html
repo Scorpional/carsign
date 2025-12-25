@@ -102,7 +102,7 @@
       <div>
         <div class="badge">Demo Preview</div>
         <h2>通勤/包车调度总览</h2>
-        <p>车辆、司机、订单、派车、行程一屏查看。静态演示版，无需登录。</p>
+        <p>车辆、司机、订单、派车、行程一屏查看。试运行版本。</p>
       </div>
       <div class="stats" id="stat-cards"></div>
     </div>
@@ -110,18 +110,50 @@
     <div class="grid">
       <div class="card">
         <h3>车辆台账</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:8px;">
+          <input id="v-plate" placeholder="车牌">
+          <input id="v-seats" placeholder="座位" type="number">
+          <input id="v-model" placeholder="车型/等级">
+          <input id="v-driver" placeholder="司机/电话">
+          <button onclick="addVehicle()">新增车辆</button>
+        </div>
         <table id="vehicles"></table>
       </div>
       <div class="card">
         <h3>人员台账</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:8px;">
+          <input id="s-name" placeholder="姓名">
+          <input id="s-phone" placeholder="电话">
+          <select id="s-role">
+            <option value="driver">司机</option>
+            <option value="dispatcher">调度</option>
+            <option value="attendant">乘务</option>
+          </select>
+          <button onclick="addStaff()">新增人员</button>
+        </div>
         <table id="staff"></table>
       </div>
       <div class="card">
         <h3>订单</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:8px;">
+          <input id="o-customer" placeholder="客户名称">
+          <input id="o-time" placeholder="用车时间 如2025-12-26 08:00">
+          <input id="o-origin" placeholder="起点">
+          <input id="o-dest" placeholder="终点/线路">
+          <input id="o-pax" placeholder="人数" type="number">
+          <button onclick="addOrder()">新增订单</button>
+        </div>
         <table id="orders"></table>
       </div>
       <div class="card">
         <h3>派车单</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:8px;">
+          <input id="d-order" placeholder="订单ID" type="number">
+          <input id="d-vehicle" placeholder="车辆(车牌)">
+          <input id="d-driver" placeholder="司机姓名">
+          <button onclick="addDispatch()">生成派车</button>
+          <button onclick="resetData()">重置演示数据</button>
+        </div>
         <table id="dispatch"></table>
       </div>
       <div class="card">
@@ -133,6 +165,17 @@
 
   <script src="data.js"></script>
   <script>
+    const deepCopy = (obj) => JSON.parse(JSON.stringify(obj));
+    const loadState = () => {
+      try {
+        const raw = localStorage.getItem("dispatch_demo_state");
+        if (raw) return JSON.parse(raw);
+      } catch (_) {}
+      return deepCopy(demoData);
+    };
+    let state = loadState();
+    const persist = () => localStorage.setItem("dispatch_demo_state", JSON.stringify(state));
+
     const renderTable = (elId, headers, rows) => {
       const el = document.getElementById(elId);
       el.innerHTML = `
@@ -143,12 +186,12 @@
     };
 
     // summary stats
-    const stats = [
-      { label: "车辆数", value: demoData.vehicles.length },
-      { label: "司机数", value: demoData.staff.length },
-      { label: "订单数", value: demoData.orders.length },
-      { label: "派车单", value: demoData.dispatch.length },
-      { label: "行程", value: demoData.trips.length },
+    const stats = () => [
+      { label: "车辆数", value: state.vehicles.length },
+      { label: "司机数", value: state.staff.length },
+      { label: "订单数", value: state.orders.length },
+      { label: "派车单", value: state.dispatch.length },
+      { label: "行程", value: state.trips.length },
     ];
     document.getElementById("stat-cards").innerHTML = stats.map(s => `
       <div class="stat">
@@ -156,30 +199,103 @@
         <div class="stat-value">${s.value}</div>
       </div>`).join("");
 
-    renderTable("vehicles",
-      ["车牌", "座位", "车型", "司机", "状态", "到期提醒"],
-      demoData.vehicles.map(v => [v.plate, v.seats, v.model, v.driver || "-", v.status, v.warn ? '<span class="warn">到期</span>' : '<span class="ok">正常</span>'])
-    );
+    const rerender = () => {
+      document.getElementById("stat-cards").innerHTML = stats().map(s => `
+        <div class="stat">
+          <div class="stat-label">${s.label}</div>
+          <div class="stat-value">${s.value}</div>
+        </div>`).join("");
 
-    renderTable("staff",
-      ["姓名", "角色", "电话", "状态", "到期提醒"],
-      demoData.staff.map(s => [s.name, s.role, s.phone, s.status, s.warn ? '<span class="warn">到期</span>' : '<span class="ok">正常</span>'])
-    );
+      renderTable("vehicles",
+        ["车牌", "座位", "车型", "司机", "状态", "到期提醒", ""],
+        state.vehicles.map((v, idx) => [
+          v.plate, v.seats, v.model, v.driver || "-", v.status,
+          v.warn ? '<span class="warn">到期</span>' : '<span class="ok">正常</span>',
+          `<button onclick="removeVehicle(${idx})">删除</button>`
+        ])
+      );
 
-    renderTable("orders",
-      ["客户", "用车时间", "起点", "终点", "人数", "状态"],
-      demoData.orders.map(o => [o.customer, o.ride_time, o.origin, o.destination, o.pax, o.status])
-    );
+      renderTable("staff",
+        ["姓名", "角色", "电话", "状态", "到期提醒", ""],
+        state.staff.map((s, idx) => [
+          s.name, s.role, s.phone, s.status,
+          s.warn ? '<span class="warn">到期</span>' : '<span class="ok">正常</span>',
+          `<button onclick="removeStaff(${idx})">删除</button>`
+        ])
+      );
 
-    renderTable("dispatch",
-      ["行程号", "订单", "车辆", "司机", "创建时间"],
-      demoData.dispatch.map(d => [d.trip_code, d.order_id, d.vehicle, d.driver, d.created_at])
-    );
+      renderTable("orders",
+        ["客户", "用车时间", "起点", "终点", "人数", "状态", ""],
+        state.orders.map((o, idx) => [
+          o.customer, o.ride_time, o.origin, o.destination, o.pax, o.status,
+          `<button onclick="removeOrder(${idx})">删除</button>`
+        ])
+      );
 
-    renderTable("trips",
-      ["行程号", "状态", "接单", "出发", "到达", "结束"],
-      demoData.trips.map(t => [t.trip_code, t.status, t.accepted_at, t.departed_at, t.arrived_at, t.finished_at])
-    );
+      renderTable("dispatch",
+        ["行程号", "订单", "车辆", "司机", "创建时间", ""],
+        state.dispatch.map((d, idx) => [
+          d.trip_code, d.order_id, d.vehicle, d.driver, d.created_at,
+          `<button onclick="removeDispatch(${idx})">删除</button>`
+        ])
+      );
+
+      renderTable("trips",
+        ["行程号", "状态", "接单", "出发", "到达", "结束"],
+        state.trips.map(t => [t.trip_code, t.status, t.accepted_at, t.departed_at, t.arrived_at, t.finished_at])
+      );
+    };
+
+    // mutation helpers
+    window.addVehicle = () => {
+      const plate = document.getElementById("v-plate").value.trim();
+      const seats = parseInt(document.getElementById("v-seats").value || "0", 10);
+      const model = document.getElementById("v-model").value.trim();
+      const driver = document.getElementById("v-driver").value.trim();
+      if (!plate || !seats || !model) return alert("车牌/座位/车型不能为空");
+      state.vehicles.push({ plate, seats, model, driver, status: "available", warn: false });
+      persist(); rerender();
+    };
+    window.removeVehicle = (idx) => { state.vehicles.splice(idx,1); persist(); rerender(); };
+
+    window.addStaff = () => {
+      const name = document.getElementById("s-name").value.trim();
+      const phone = document.getElementById("s-phone").value.trim();
+      const role = document.getElementById("s-role").value;
+      if (!name || !phone) return alert("姓名/电话不能为空");
+      state.staff.push({ name, phone, role, status: "on_duty", warn: false });
+      persist(); rerender();
+    };
+    window.removeStaff = (idx) => { state.staff.splice(idx,1); persist(); rerender(); };
+
+    window.addOrder = () => {
+      const customer = document.getElementById("o-customer").value.trim();
+      const time = document.getElementById("o-time").value.trim();
+      const origin = document.getElementById("o-origin").value.trim();
+      const dest = document.getElementById("o-dest").value.trim();
+      const pax = parseInt(document.getElementById("o-pax").value || "0", 10);
+      if (!customer || !time || !origin || !dest || !pax) return alert("订单信息不完整");
+      state.orders.push({ customer, ride_time: time, origin, destination: dest, pax, status: "pending" });
+      persist(); rerender();
+    };
+    window.removeOrder = (idx) => { state.orders.splice(idx,1); persist(); rerender(); };
+
+    window.addDispatch = () => {
+      const orderId = parseInt(document.getElementById("d-order").value || "0", 10);
+      const vehicle = document.getElementById("d-vehicle").value;
+      const driver = document.getElementById("d-driver").value;
+      if (!orderId || !vehicle || !driver) return alert("派车信息不完整");
+      const trip_code = `${new Date().toISOString().slice(0,10).replace(/-/g,"")}-${String(state.dispatch.length+1).padStart(4,"0")}`;
+      state.dispatch.push({ trip_code, order_id: orderId, vehicle, driver, created_at: new Date().toISOString().slice(0,16).replace("T"," ") });
+      state.trips.push({ trip_code, status: "assigned", accepted_at: "-", departed_at: "-", arrived_at: "-", finished_at: "-" });
+      persist(); rerender();
+    };
+    window.removeDispatch = (idx) => { state.dispatch.splice(idx,1); persist(); rerender(); };
+
+    window.resetData = () => { state = deepCopy(demoData); persist(); rerender(); };
+
+    // init
+    rerender();
   </script>
 </body>
 </html>
