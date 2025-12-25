@@ -51,7 +51,7 @@ docker compose run --rm api python app/seed.py
 1. 连接 GitHub 仓库，直接用 Dockerfile 构建。
 2. 环境变量：`DATABASE_URL=sqlite:///./data/app.db`，`JWT_SECRET`，`ADMIN_EMAIL`，`ADMIN_PASSWORD`（其余 Postgres 变量可忽略）。
 3. 持久化存储：挂载卷到 `/app/data`（SQLite）与 `/app/uploads`（回单）。
-4. 启动命令保持默认：`sh -c "alembic upgrade head && python app/init_admin.py && uvicorn app.main:app --host 0.0.0.0 --port 8000"`。
+4. 启动命令保持默认：`sh -c "mkdir -p /app/data /app/uploads && python app/init_admin.py && uvicorn app.main:app --host 0.0.0.0 --port 8000"`。
 5. 暴露端口：8000 -> 对外 8080。
 6. 需要演示数据：`docker compose run --rm app python app/seed.py`（Zeabur 可开一次性任务执行）。
 

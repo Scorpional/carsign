@@ -10,6 +10,5 @@ services:
       - ./uploads:/app/uploads
     command: >
       sh -c "mkdir -p /app/data /app/uploads &&
-             alembic upgrade head &&
              python app/init_admin.py &&
              uvicorn app.main:app --host 0.0.0.0 --port 8000"
