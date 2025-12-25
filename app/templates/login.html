@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<h3>登录</h3>
+<form method="post" action="/web/login">
+  <input name="email" placeholder="邮箱">
+  <input name="password" type="password" placeholder="密码">
+  <button type="submit">登录</button>
+  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+</form>
+<p>初始管理员: admin@example.com / Admin123!</p>
+{% endblock %}
