@@ -12,12 +12,17 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
 
+def _truncate_bcrypt(password: str) -> str:
+    # bcrypt accepts up to 72 bytes; truncate to avoid runtime errors with long secrets
+    return password[:72]
+
+
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    return pwd_context.verify(_truncate_bcrypt(plain), hashed)
 
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    return pwd_context.hash(_truncate_bcrypt(password))
 
 
 def create_access_token(sub: str, role: models.Role):
