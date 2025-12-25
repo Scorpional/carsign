@@ -12,3 +12,6 @@ COPY . .
 RUN mkdir -p /app/uploads /app/data
 
 EXPOSE 8000
+
+# Default start command baked in (Zeabur 可不用额外设置)
+CMD ["sh", "-c", "mkdir -p /app/data /app/uploads && python app/init_admin.py && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
